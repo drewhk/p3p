@@ -334,15 +334,21 @@ fn compute_poses_nordberg(
     let f2 = Vec3::from(bearing_vectors[1]);
     let f3 = Vec3::from(bearing_vectors[2]);
 
+    println!("A");
+
     let f1 = f1.normalize();
     let f2 = f2.normalize();
     let f3 = f3.normalize();
+
+    println!("B");
 
     // Compute vectors between 3D points.
     let d12 = wp1 - wp2;
     let d13 = wp1 - wp3;
     let d23 = wp2 - wp3;
     let d12xd13 = d12.cross(&d13);
+
+    println!("C");
 
     // "a12" is the squared distance between 3D points 1 and 2.
     let a12 = d12.norm_squared();
@@ -364,6 +370,8 @@ fn compute_poses_nordberg(
     let b12 = -2.0 * c12;
     let b13 = -2.0 * c31;
     let b23 = -2.0 * c23;
+
+    println!("D");
 
     // "p[0-3]" here are the four coefficients of the cubic polynomial.
     // They are refered to as "c[0-3]" in equation (10) of the paper.
@@ -392,6 +400,8 @@ fn compute_poses_nordberg(
         d0_02, d0_12, d0_22,
     );
 
+    println!("E");
+
     // Get sorted eigenvectors and eigenvalues of the singular matrix D0.
     let (eig_vectors, eig_values) = eigen_decomposition_singular(d0_mat);
 
@@ -414,6 +424,8 @@ fn compute_poses_nordberg(
         let c = a * ((a13 - a12) * w0 * w0 + a13 * b12 * w0 + a13);
         (w0, w1, b, c)
     };
+
+    println!("F");
 
     // Helper closure to estimate possible depths values.
     // CF equation (16) in paper.
@@ -465,11 +477,15 @@ fn compute_poses_nordberg(
     );
     let x_mat = x_mat.try_inverse().expect("Woops not inversable");
 
+    println!("G");
+
     lambdas
         .iter()
         .map(|&lambda| {
             // Refine estimated depth values.
             let lambda_refined = gauss_newton_refine_lambda(lambda, a12, a13, a23, b12, b13, b23);
+
+            println!("lambda: {}", lambda);
 
             let ry1 = lambda_refined[0] * f1;
             let ry2 = lambda_refined[1] * f2;
