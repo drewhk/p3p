@@ -68,7 +68,7 @@ pub fn solve(world_3d_points: &[[f64; 3]; 3], bearing_vectors: &[[f64; 3]; 3]) -
     compute_poses_nordberg(world_3d_points, bearing_vectors)
         .into_iter()
         .map(|(rot, trans)| {
-            println!("MAT1");
+            println!("MAT1 {} {}", rot, trans);
             let rotation = UnitQuaternion::from_matrix(&rot);
             println!("MAT2");
             let translation = Translation::from(trans);
