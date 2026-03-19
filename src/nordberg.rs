@@ -13,7 +13,7 @@
 //!
 //! [lambda-twist-github]: https://github.com/midjji/lambdatwist-p3p
 
-use nalgebra::{Isometry3, Matrix3, Quaternion, Translation, UnitQuaternion, Vector3, Vector4};
+use nalgebra::{Isometry3, Matrix3, Quaternion, Rotation3, Translation, UnitQuaternion, Vector3, Vector4};
 
 type Iso3 = Isometry3<f64>;
 type Mat3 = Matrix3<f64>;
@@ -69,7 +69,7 @@ pub fn solve(world_3d_points: &[[f64; 3]; 3], bearing_vectors: &[[f64; 3]; 3]) -
         .into_iter()
         .map(|(rot, trans)| {
             println!("MAT1 {} {}", rot, trans);
-            let rotation = UnitQuaternion::from_matrix(&rot);
+            let rotation: UnitQuaternion<f64> = Rotation3::from_matrix(&rot).into();
             println!("MAT2");
             let translation = Translation::from(trans);
             println!("MAT3");
