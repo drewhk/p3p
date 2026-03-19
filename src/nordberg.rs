@@ -67,13 +67,17 @@ pub struct Pose {
 pub fn solve(world_3d_points: &[[f64; 3]; 3], bearing_vectors: &[[f64; 3]; 3]) -> Vec<Pose> {
     compute_poses_nordberg(world_3d_points, bearing_vectors)
         .into_iter()
-        .map(|(rot, trans)| {
+        .filter_map(|(rot, trans)| {
             println!("MAT1 {} {}", rot, trans);
-            let rotation = UnitQuaternion::from_rotation_matrix(&Rotation3::from_matrix(&rot));
-            println!("MAT2");
-            let translation = Translation::from(trans);
-            println!("MAT3");
-            Pose::from_iso3(Iso3::from_parts(translation, rotation))
+            if rot.trace() < 1e-12 {
+                None
+            } else {
+                let rotation = UnitQuaternion::from_rotation_matrix(&Rotation3::from_matrix(&rot));
+                println!("MAT2");
+                let translation = Translation::from(trans);
+                println!("MAT3");
+                Some(Pose::from_iso3(Iso3::from_parts(translation, rotation)))
+            }
         })
         .collect()
 }
