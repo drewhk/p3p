@@ -15,10 +15,10 @@
 
 use nalgebra::{Isometry3, Matrix3, Quaternion, Translation, UnitQuaternion, Vector3, Vector4};
 
-type Iso3 = Isometry3<f32>;
-type Mat3 = Matrix3<f32>;
-type Vec3 = Vector3<f32>;
-type Vec4 = Vector4<f32>;
+type Iso3 = Isometry3<f64>;
+type Mat3 = Matrix3<f64>;
+type Vec3 = Vector3<f64>;
+type Vec4 = Vector4<f64>;
 
 /// Pose of a camera (almost) returned by the `solve` function.
 /// Beware that the result of the `solve` function isn't exactly the
@@ -45,10 +45,10 @@ type Vec4 = Vector4<f32>;
 pub struct Pose {
     /// Rotation given as a unit quaternion of the form `[x, y, z, w]`
     /// where the real coefficient is the last one.
-    pub rotation: [f32; 4],
+    pub rotation: [f64; 4],
 
     /// Translation.
-    pub translation: [f32; 3],
+    pub translation: [f64; 3],
 }
 
 /// Return 0 to 4 potential $(\bm{R}, \bm{t})$ solutions to the equation:
@@ -64,7 +64,7 @@ pub struct Pose {
 /// The input arguments should be considered as
 /// `world_3d_points = [` $\bm{x_1}, \bm{x_2}, \bm{x_3}$ `]`
 /// and similarly for `bearing_vectors`.
-pub fn solve(world_3d_points: &[[f32; 3]; 3], bearing_vectors: &[[f32; 3]; 3]) -> Vec<Pose> {
+pub fn solve(world_3d_points: &[[f64; 3]; 3], bearing_vectors: &[[f64; 3]; 3]) -> Vec<Pose> {
     compute_poses_nordberg(world_3d_points, bearing_vectors)
         .into_iter()
         .map(|(rot, trans)| {
@@ -77,7 +77,7 @@ pub fn solve(world_3d_points: &[[f32; 3]; 3], bearing_vectors: &[[f32; 3]; 3]) -
 
 /// Compute the angular residual between the bearing vector and the 3D point projection vector.
 /// Return `1 - cos(angle)`.
-pub fn error(point_3d: &[f32; 3], bearing_vector: &[f32; 3], pose: &Pose) -> f32 {
+pub fn error(point_3d: &[f64; 3], bearing_vector: &[f64; 3], pose: &Pose) -> f64 {
     let new_bearing = (pose.to_iso3() * Vec3::from(*point_3d)).normalize();
     let bearing_vector = Vec3::from(*bearing_vector).normalize();
     1.0 - bearing_vector.dot(&new_bearing)
@@ -106,24 +106,24 @@ impl Pose {
 /// Refine a valid solution with a Gauss-Newton Solver.
 /// `refined_lambda = gauss_newton_refine_lambda(lambda, a12, a13, a23, b12, b13, b23);`
 /// lambda: Vec3, the solution to refine.
-/// a12: f32, the squared distance between 3D point 1 and 3D point 2.
-/// a13: f32, the squared distance between 3D point 1 and 3D point 3.
-/// a23: f32, the squared distance between 3D point 2 and 3D point 3.
-/// b12: f32, -2.0 * cosine of the angle between bearing vector 1 and bearing vector 2.
-/// b13: f32, -2.0 * cosine of the angle between bearing vector 1 and bearing vector 3.
-/// b23: f32, -2.0 * cosine of the angle between bearing vector 2 and bearing vector 3.
+/// a12: f64, the squared distance between 3D point 1 and 3D point 2.
+/// a13: f64, the squared distance between 3D point 1 and 3D point 3.
+/// a23: f64, the squared distance between 3D point 2 and 3D point 3.
+/// b12: f64, -2.0 * cosine of the angle between bearing vector 1 and bearing vector 2.
+/// b13: f64, -2.0 * cosine of the angle between bearing vector 1 and bearing vector 3.
+/// b23: f64, -2.0 * cosine of the angle between bearing vector 2 and bearing vector 3.
 // The paper note it rarely improve after two iterations. The original implementation use 5 iterations.
 // PS: the number of iterations is hardcoded here,
 // it's a template parameter in the original implementation.
 #[allow(clippy::similar_names)]
 fn gauss_newton_refine_lambda(
     lambda: Vec3,
-    a12: f32,
-    a13: f32,
-    a23: f32,
-    b12: f32,
-    b13: f32,
-    b23: f32,
+    a12: f64,
+    a13: f64,
+    a23: f64,
+    b12: f64,
+    b13: f64,
+    b23: f64,
 ) -> Vec3 {
     let compute_residual = |l: &Vec3| {
         let l1 = l.x;
@@ -171,13 +171,13 @@ fn gauss_newton_refine_lambda(
 /// Compute L1 norm of a vector.
 /// L1 norm is the sum of magnitudes.
 #[inline]
-fn l1_norm(v: Vec3) -> f32 {
+fn l1_norm(v: Vec3) -> f64 {
     v.x.abs() + v.y.abs() + v.z.abs()
 }
 
 /// Compute the real roots of "h(r) = r^2 + b*r + c = 0".
 /// `let (roots_are_real, r1, r2) = root2real(b, c);`
-fn root2real(b: f32, c: f32) -> (bool, f32, f32) {
+fn root2real(b: f64, c: f64) -> (bool, f64, f64) {
     let discriminant = b * b - 4.0 * c;
     if discriminant < 0.0 {
         let root = 0.5 * b;
@@ -212,7 +212,7 @@ fn root2real(b: f32, c: f32) -> (bool, f32, f32) {
 /// as the leftmost or rightmost root of these approximations,
 /// depending on whether zero, one, or both of h(t1) and h(t2) are > 0.
 #[allow(clippy::many_single_char_names)]
-fn cube_root(b: f32, c: f32, d: f32) -> f32 {
+fn cube_root(b: f64, c: f64, d: f64) -> f64 {
     // Choose an initial solution.
     let mut r0;
     // Not monotonic.
@@ -288,7 +288,7 @@ fn eigen_decomposition_singular(x: Mat3) -> (Mat3, Vec3) {
     let prec_0 = x.m12 * x.m23 - x.m13 * x.m22;
     let prec_1 = x.m12 * x.m13 - x.m11 * x.m23;
 
-    let compute_eigen_vector = |e: f32| {
+    let compute_eigen_vector = |e: f64| {
         let tmp = 1.0 / (e * (x.m11 + x.m22) + mx0011 - e * e + x12_sqr);
         let mut a1 = -(e * x.m13 + prec_0) * tmp;
         let mut a2 = -(e * x.m23 + prec_1) * tmp;
@@ -321,8 +321,8 @@ fn eigen_decomposition_singular(x: Mat3) -> (Mat3, Vec3) {
 /// The 3x3 matrix `bearing_vectors` contains one homogeneous image coordinate per column.
 #[allow(clippy::similar_names)]
 fn compute_poses_nordberg(
-    world_3d_points: &[[f32; 3]; 3],
-    bearing_vectors: &[[f32; 3]; 3],
+    world_3d_points: &[[f64; 3]; 3],
+    bearing_vectors: &[[f64; 3]; 3],
 ) -> Vec<(Mat3, Vec3)> {
     // Extraction of 3D points vectors
     let wp1 = Vec3::from(world_3d_points[0]);
@@ -400,11 +400,11 @@ fn compute_poses_nordberg(
     let mut lambdas = Vec::with_capacity(4);
 
     // Solve the four possible solutions for the depths values.
-    let eigen_ratio = (0.0_f32.max(-eig_values[1] / eig_values[0])).sqrt();
+    let eigen_ratio = (0.0_f64.max(-eig_values[1] / eig_values[0])).sqrt();
 
     // Helper closure to compute quadratic coefficients.
     // CF equation (15) in paper.
-    let quadratic_coefficients = |ratio: f32| {
+    let quadratic_coefficients = |ratio: f64| {
         let w2 = 1.0 / (ratio * eig_vectors.m12 - eig_vectors.m11);
         let w0 = w2 * (eig_vectors.m21 - ratio * eig_vectors.m22);
         let w1 = w2 * (eig_vectors.m31 - ratio * eig_vectors.m32);
@@ -417,7 +417,7 @@ fn compute_poses_nordberg(
 
     // Helper closure to estimate possible depths values.
     // CF equation (16) in paper.
-    let possible_depths = |tau: f32, w0: f32, w1: f32| {
+    let possible_depths = |tau: f64, w0: f64, w1: f64| {
         let d = a23 / (tau * (b23 + tau) + 1.0);
         if d > 0.0 {
             let l2 = d.sqrt();
@@ -430,7 +430,7 @@ fn compute_poses_nordberg(
     };
 
     // Helper closure pushing one potential solution.
-    let mut push_solution = |tau: f32, w0: f32, w1: f32| {
+    let mut push_solution = |tau: f64, w0: f64, w1: f64| {
         if tau > 0.0 {
             let (valid, l1, l2, l3) = possible_depths(tau, w0, w1);
             if valid && l1 >= 0.0 {
@@ -441,7 +441,7 @@ fn compute_poses_nordberg(
 
     // Helper closure pushing two potential solutions
     // corresponding to a given eigen value ratio.
-    let mut push_solutions_to_lambdas = |ratio: f32| {
+    let mut push_solutions_to_lambdas = |ratio: f64| {
         let (w0, w1, b, c) = quadratic_coefficients(ratio);
         if b * b - 4.0 * c >= 0.0 {
             let (_, tau1, tau2) = root2real(b, c);
@@ -501,9 +501,9 @@ mod tests {
     use nalgebra::Point3;
     use quickcheck_macros;
 
-    type V3 = (f32, f32, f32);
+    type V3 = (f64, f64, f64);
 
-    const EPSILON_APPROX: f32 = 1e-2;
+    const EPSILON_APPROX: f64 = 1e-2;
 
     #[test]
     fn manual_case() {

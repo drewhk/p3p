@@ -13,12 +13,11 @@ categories = ["science::robotics", "multimedia::video"] # up to 5 categories, cf
 license = "MPL-2.0" # SPDX license
 
 [dependencies.nalgebra]
-version = "0.18.1"
-default-features = false
-# features = []
+version = "0.34"
+features = ["libm"]
 
 [dev-dependencies]
-approx = "0.3"
+approx = "0.5.1"
 quickcheck = "0.8"
 quickcheck_macros = "0.8"
 
